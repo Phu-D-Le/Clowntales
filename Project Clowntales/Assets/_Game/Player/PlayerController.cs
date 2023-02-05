@@ -7,24 +7,23 @@ public class PlayerController : MonoBehaviour
 {
     public float movementSpeed;
     private Vector2 move, mouseLook, joystickLook;
-    private InputActionReference mouseAim;
+    private InputActionReference mouseAim, primaryFire;
     private Vector3 rotationTarget;
     private CharacterController characterController;
-    public bool lookAtMouse = false;
+    public bool usingMouse = false, primaryFiring = false;
+    public GunController gunPrimary;
 
-    public void OnMouseAim(InputAction.CallbackContext context)
+    public void OnMouseAim(InputAction.CallbackContext context) // if the player click a mouse button -> player is using mouse -> lookAtMouse = true
     {
         if (context.performed)
         {
-            print("Attack");
-            lookAtMouse = true;
+            usingMouse = true;
         }
         else
         {
-            lookAtMouse = false;
+            usingMouse = false;
         }
     }
-
     public void OnMove(InputAction.CallbackContext context)
     {
         move = context.ReadValue<Vector2>();
@@ -37,6 +36,17 @@ public class PlayerController : MonoBehaviour
     {
         joystickLook = context.ReadValue<Vector2>();
     }
+    public void OnPrimaryFire(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+        {
+            primaryFiring = true;
+        }
+        else
+        {
+            primaryFiring = false;
+        }
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -47,7 +57,7 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (lookAtMouse == true) // Mouse and Keyboard detected
+        if (usingMouse) // if player is using mouse, raycast from camera origin (middle of screen) to mouse position
         {
             RaycastHit hit;
             Ray ray = Camera.main.ScreenPointToRay(mouseLook);
@@ -60,7 +70,7 @@ public class PlayerController : MonoBehaviour
             moveWhileAim();
         }
 
-        else // Controller detected
+        else // else no mouse detected, use Controller joystick
         {
             if(joystickLook.x == 0 && joystickLook.y == 0)
             {
@@ -70,6 +80,16 @@ public class PlayerController : MonoBehaviour
             {
                 moveWhileAim();
             }
+        }
+
+        if (primaryFiring)
+        {
+            gunPrimary.isFiring = true;
+        }
+
+        else
+        {
+            gunPrimary.isFiring = false;
         }
     }
 
@@ -84,9 +104,9 @@ public class PlayerController : MonoBehaviour
 
         characterController.Move(movement * movementSpeed * Time.deltaTime);
     }
-    public void moveWhileAim()
+    public void moveWhileAim() // when the character is moving and aiming, if else method to differentiation between K&M and Controller
     {
-        if (lookAtMouse)
+        if (usingMouse) // if player is using mouse
         {
             var lookPos = rotationTarget - transform.position;
             lookPos.y = 0;
@@ -100,7 +120,7 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        else
+        else // else player is using joystick
         {
             Vector3 aimDirection = new Vector3(joystickLook.x, 0f, joystickLook.y);
 
